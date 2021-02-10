@@ -8,12 +8,11 @@ const globrex = require("globrex");
 const Diff = require("diff");
 
 const sizes = {
-  0: "XS",
-  10: "S",
-  30: "M",
-  100: "L",
-  500: "XL",
-  1000: "XXL"
+  0: "xs",
+  100: "s",
+  200: "m",
+  500: "l",
+  501: "xl"
 };
 
 const actions = ["opened", "synchronize", "reopened"];
@@ -123,11 +122,18 @@ function parseIgnored(str = "") {
     .split(/\r|\n/)
     .map(s => s.trim())
     .filter(s => s.length > 0 && !s.startsWith("#"))
-    .map(s =>
-      s.length > 1 && s[0] === "!"
+    .map(s => {
+      debug("Ignored glob: ", `'${s}'`);
+      return s.length > 1 && s[0] === "!"
         ? { not: globrex(s.substr(1), globrexOptions) }
-        : globrex(s, globrexOptions)
-    );
+        : globrex(s, globrexOptions);
+    });
+
+  debug(
+    "Regexes: ",
+    ignored.map(glob => glob.regex)
+  );
+
   function isIgnored(path) {
     if (path == null || path === "/dev/null") {
       return true;
@@ -137,12 +143,14 @@ function parseIgnored(str = "") {
     for (const entry of ignored) {
       if (entry.not) {
         if (pathname.match(entry.not.regex)) {
-          return false;
+          ignore = false;
+          break;
         }
       } else if (!ignore && pathname.match(entry.regex)) {
         ignore = true;
       }
     }
+    debug("isIgnored: ", path, "=", ignore);
     return ignore;
   }
   return isIgnored;
